@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 const app = express();
 const port = process.env.PORT || 5000;
@@ -27,12 +27,24 @@ async function run() {
 
     const jobsCollection = client.db("jobJunctionDB").collection("jobs");
 
+    // jobs collection operations
     app.get("/jobs", async (req, res) => {
       try {
         const category = req?.query?.category;
         const query = { category: category };
         const cursor = jobsCollection.find(query);
         const result = await cursor.toArray();
+        res.send(result);
+      } catch (error) {
+        console.log(error);
+      }
+    });
+
+    app.get("/jobs/:id", async (req, res) => {
+      try {
+        const id = req?.params?.id;
+        const query = { _id: new ObjectId(id) };
+        const result = await jobsCollection.findOne(query);
         res.send(result);
       } catch (error) {
         console.log(error);
