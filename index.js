@@ -26,6 +26,7 @@ async function run() {
     await client.connect();
 
     const jobsCollection = client.db("jobJunctionDB").collection("jobs");
+    const bitsCollection = client.db("jobJunctionDB").collection("bits");
 
     // jobs collection operations
     app.get("/jobs", async (req, res) => {
@@ -57,6 +58,17 @@ async function run() {
         const result = await jobsCollection.insertOne(jobInformation);
         res.send(result);
       } catch (error) {}
+    });
+
+    // bitsCollectionDB operation
+    app.post("/bits", async (req, res) => {
+      try {
+        const bitJob = req.body;
+        const result = await bitsCollection.insertOne(bitJob);
+        res.send(result);
+      } catch (error) {
+        console.log(error);
+      }
     });
 
     // Send a ping to confirm a successful connection
