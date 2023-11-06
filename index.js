@@ -29,7 +29,9 @@ async function run() {
 
     app.get("/jobs", async (req, res) => {
       try {
-        const cursor = jobsCollection.find();
+        const category = req?.query?.category;
+        const query = { category: category };
+        const cursor = jobsCollection.find(query);
         const result = await cursor.toArray();
         res.send(result);
       } catch (error) {
