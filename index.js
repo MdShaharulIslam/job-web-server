@@ -23,7 +23,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
     const jobsCollection = client.db("jobJunctionDB").collection("jobs");
     const bitsCollection = client.db("jobJunctionDB").collection("bits");
@@ -31,9 +31,7 @@ async function run() {
     // jobs collection operations
     app.get("/jobs", async (req, res) => {
       try {
-        const category = req?.query?.category;
-        const query = { category: category };
-        const cursor = jobsCollection.find(query);
+        const cursor = jobsCollection.find();
         const result = await cursor.toArray();
         res.send(result);
       } catch (error) {
@@ -61,6 +59,11 @@ async function run() {
     });
 
     // bitsCollectionDB operation
+    app.get("/bits", async (req, res) => {
+      const result = await bitsCollection.find().toArray();
+      res.send(result);
+    });
+
     app.post("/bits", async (req, res) => {
       try {
         const bitJob = req.body;
