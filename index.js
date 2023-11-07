@@ -23,7 +23,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    // await client.connect();
+    await client.connect();
 
     const jobsCollection = client.db("jobJunctionDB").collection("jobs");
     // const postedJobsCollection = client
@@ -99,6 +99,21 @@ async function run() {
       res.send(result);
     });
 
+    app.patch("/jobs/:id", async (req, res) => {
+      const id = req?.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updateReq = req.body;
+      const options = { upsert: true };
+      const updateJob = {
+        $set: {
+          bidReqEmail: updateReq.bidReqEmail,
+          bidReqPrice: updateReq.bidReqPrice,
+        },
+      };
+      const result = await jobsCollection.updateOne(filter, updateJob, options);
+      res.send(result);
+    });
+
     app.delete("/jobs/:id", async (req, res) => {
       try {
         const id = req?.params;
@@ -144,8 +159,13 @@ async function run() {
 
     // bitsCollectionDB operation
     app.get("/bits", async (req, res) => {
-      const result = await bitsCollection.find().toArray();
-      res.send(result);
+      try {
+        const query = { email: req?.query?.email };
+        const result = await bitsCollection.find(query).toArray();
+        res.send(result);
+      } catch (error) {
+        console.log(error);
+      }
     });
 
     app.post("/bits", async (req, res) => {
