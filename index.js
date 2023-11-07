@@ -80,6 +80,25 @@ async function run() {
       }
     });
 
+    app.put("/jobs/:id", async (req, res) => {
+      const id = req?.params?.id;
+      // console.log(id);
+      const filter = { _id: new ObjectId(id) };
+      const updateJobRequest = req?.body;
+      const updateJobInfo = {
+        $set: {
+          title: updateJobRequest.title,
+          deadline: updateJobRequest.deadline,
+          category: updateJobRequest.category,
+          minPrice: updateJobRequest.minPrice,
+          maxPrice: updateJobRequest.maxPrice,
+          desc: updateJobRequest.desc,
+        },
+      };
+      const result = await jobsCollection.updateOne(filter, updateJobInfo);
+      res.send(result);
+    });
+
     app.delete("/jobs/:id", async (req, res) => {
       try {
         const id = req?.params;
