@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId, Long } = require("mongodb");
 require("dotenv").config();
 const app = express();
 const port = process.env.PORT || 5000;
@@ -26,12 +26,32 @@ async function run() {
     // await client.connect();
 
     const jobsCollection = client.db("jobJunctionDB").collection("jobs");
+    // const postedJobsCollection = client
+    //   .db("jobJunctionDB")
+    // .collection("postedJobs");
     const bitsCollection = client.db("jobJunctionDB").collection("bits");
 
     // jobs collection operations
+    // app.get("/jobs", async (req, res) => {
+    //   try {
+    //     const cursor = jobsCollection.find();
+    //     const result = await cursor.toArray();
+    //     res.send(result);
+    //   } catch (error) {
+    //     console.log(error);
+    //   }
+    // });
+
     app.get("/jobs", async (req, res) => {
       try {
-        const cursor = jobsCollection.find();
+        if (!req?.query?.email) {
+          const cursor = jobsCollection.find();
+          const result = await cursor.toArray();
+          res.send(result);
+          return;
+        }
+        const query = { email: req?.query?.email };
+        const cursor = jobsCollection.find(query);
         const result = await cursor.toArray();
         res.send(result);
       } catch (error) {
@@ -55,8 +75,53 @@ async function run() {
         const jobInformation = req.body;
         const result = await jobsCollection.insertOne(jobInformation);
         res.send(result);
-      } catch (error) {}
+      } catch (error) {
+        console.log(error);
+      }
     });
+
+    app.delete("/jobs/:id", async (req, res) => {
+      try {
+        const id = req?.params;
+        const query = { _id: new ObjectId(id) };
+        const result = await jobsCollection.deleteOne(query);
+        res.send(result);
+      } catch (error) {
+        console.log(console.error());
+      }
+    });
+
+    // postedJobsCollection operations
+    // app.get("/postedJobs", async (req, res) => {
+    //   try {
+    //     const query = { email: req?.query?.email };
+    //     const cursor = postedJobsCollection.find(query);
+    //     const result = await cursor.toArray();
+    //     res.send(result);
+    //   } catch (error) {
+    //     console.log(error);
+    //   }
+    // });
+
+    // app.post("/postedJobs", async (req, res) => {
+    //   try {
+    //     const job = req.body;
+    //     const result = await postedJobsCollection.insertOne(job);
+    //     res.send(result);
+    //   } catch (error) {
+    //     console.log(error);
+    //   }
+    // });
+
+    // app.delete("/postedJobs/:id", async (req, res) => {
+    //   try {
+    //     const id = req?.params;
+    //     const query = { _id: new ObjectId(id)}
+    //     const result = await pr
+    //   } catch (error) {
+    //     console.log(console.error());
+    //   }
+    // });
 
     // bitsCollectionDB operation
     app.get("/bits", async (req, res) => {
