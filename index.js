@@ -36,7 +36,6 @@ const verifyToken = async (req, res, next) => {
   }
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
     if (err) {
-      console.log(err);
       return res.status(401).send({ message: "unauthorized access" });
     }
     req.user = decoded;
@@ -52,7 +51,7 @@ async function run() {
     const jobsCollection = client.db("jobJunctionDB").collection("jobs");
     const bidsCollection = client.db("jobJunctionDB").collection("bids");
 
-    // jwt
+    // jwt api
     app.post("/jwt", async (req, res) => {
       const user = req.body;
       const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
@@ -66,16 +65,14 @@ async function run() {
         .send({ success: true });
     });
 
+    app.post("/logout", async (req, res) => {
+      const user = req.body;
+      res.clearCookie("token", { maxAge: 0 }).send({ success: true });
+    });
+
+    /// service api
+
     // jobs collection operations
-    // app.get("/jobs", async (req, res) => {
-    //   try {
-    //     const cursor = jobsCollection.find();
-    //     const result = await cursor.toArray();
-    //     res.send(result);
-    //   } catch (error) {
-    //     console.log(error);
-    //   }
-    // });
 
     app.get("/jobs", verifyToken, async (req, res) => {
       try {
@@ -95,7 +92,7 @@ async function run() {
           query = { email: req.query.email };
         }
         // const query = { email: req?.query?.email };
-        const cursor = jobsCollection.find(query);
+        const cursor = jobsCollection.find(query).sort({ title: 1 });
         const result = await cursor.toArray();
         res.send(result);
       } catch (error) {
