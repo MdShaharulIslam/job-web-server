@@ -1,13 +1,21 @@
 const express = require("express");
 const cors = require("cors");
+var jwt = require("jsonwebtoken");
+var cookieParser = require("cookie-parser");
 const { MongoClient, ServerApiVersion, ObjectId, Long } = require("mongodb");
 require("dotenv").config();
 const app = express();
 const port = process.env.PORT || 5000;
 
 // middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: ["http://localhost:5173"],
+    credentials: true,
+  })
+);
 app.use(express.json());
+app.use(cookieParser());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.m6cowle.mongodb.net/?retryWrites=true&w=majority`;
 
@@ -23,10 +31,24 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
     const jobsCollection = client.db("jobJunctionDB").collection("jobs");
     const bidsCollection = client.db("jobJunctionDB").collection("bids");
+
+    // jwt
+    app.post("/jwt", async (req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: "1hr",
+      });
+      res
+        .cookie("access_token", token, {
+          httpOnly: true,
+          secure: false,
+        })
+        .send({ success: true });
+    });
 
     // jobs collection operations
     // app.get("/jobs", async (req, res) => {
