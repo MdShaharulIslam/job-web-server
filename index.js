@@ -10,7 +10,11 @@ const port = process.env.PORT || 5000;
 // middleware
 app.use(
   cors({
-    origin: ["http://localhost:5173"],
+    origin: [
+      "http://localhost:5173",
+      "https://job-junction-52e11.web.app",
+      "https://job-junction-52e11.firebaseapp.com",
+    ],
     credentials: true,
   })
 );
@@ -60,7 +64,8 @@ async function run() {
       res
         .cookie("token", token, {
           httpOnly: true,
-          secure: false,
+          secure: true,
+          sameSite: "none",
         })
         .send({ success: true });
     });
@@ -74,27 +79,22 @@ async function run() {
 
     // jobs collection operations
 
-    app.get("/jobs", verifyToken, async (req, res) => {
+    app.get("/jobs", async (req, res) => {
       try {
         if (!req?.query?.email) {
           const cursor = jobsCollection.find();
           const result = await cursor.toArray();
+          return res.send(result);
+        } else {
+          let query = {};
+          if (req.query?.email) {
+            query = { email: req.query.email };
+          }
+          // const query = { email: req?.query?.email };
+          const cursor = jobsCollection.find(query).sort({ title: 1 });
+          const result = await cursor.toArray();
           res.send(result);
-          return;
         }
-
-        if (req.query?.email !== req.user?.email) {
-          return res.status(403).send({ message: "forbidden access" });
-        }
-
-        let query = {};
-        if (req.query?.email) {
-          query = { email: req.query.email };
-        }
-        // const query = { email: req?.query?.email };
-        const cursor = jobsCollection.find(query).sort({ title: 1 });
-        const result = await cursor.toArray();
-        res.send(result);
       } catch (error) {
         console.log(error);
       }
@@ -140,6 +140,27 @@ async function run() {
       res.send(result);
     });
 
+    app.patch("/jobs", async (req, res) => {
+      try {
+        const email = req?.query?.email;
+        const title = req?.query?.title;
+        const filter = {
+          bidReqEmail: email,
+          title: title,
+        };
+        const updateReq = req.body;
+        const updateDoc = {
+          $set: {
+            status: updateReq.status,
+          },
+        };
+        const result = await jobsCollection.updateOne(filter, updateDoc);
+        res.send(result);
+      } catch (error) {
+        console.log(error);
+      }
+    });
+
     app.patch("/jobs/:id", async (req, res) => {
       try {
         const id = req?.params.id;
@@ -183,7 +204,10 @@ async function run() {
         if (req.query?.email) {
           query = { email: req.query.email };
         }
-        const result = await bidsCollection.find(query).toArray();
+        const result = await bidsCollection
+          .find(query)
+          .sort({ title: 1 })
+          .toArray();
         res.send(result);
       } catch (error) {
         console.log(error);
@@ -200,13 +224,15 @@ async function run() {
       }
     });
 
-    app.patch("/bids/:id", async (req, res) => {
+    app.patch("/bids", async (req, res) => {
       try {
-        const id = req.params.id;
-
-        const filter = { _id: new ObjectId(id) };
+        const email = req?.query?.email;
+        const title = req?.query?.title;
+        const filter = {
+          email: email,
+          title: title,
+        };
         const updateReq = req.body;
-        console.log(updateReq);
         const updateDoc = {
           $set: {
             status: updateReq.status,
