@@ -26,10 +26,7 @@ async function run() {
     await client.connect();
 
     const jobsCollection = client.db("jobJunctionDB").collection("jobs");
-    // const postedJobsCollection = client
-    //   .db("jobJunctionDB")
-    // .collection("postedJobs");
-    const bitsCollection = client.db("jobJunctionDB").collection("bits");
+    const bidsCollection = client.db("jobJunctionDB").collection("bids");
 
     // jobs collection operations
     // app.get("/jobs", async (req, res) => {
@@ -100,18 +97,24 @@ async function run() {
     });
 
     app.patch("/jobs/:id", async (req, res) => {
-      const id = req?.params.id;
-      const filter = { _id: new ObjectId(id) };
-      const updateReq = req.body;
-      const options = { upsert: true };
-      const updateJob = {
-        $set: {
-          bidReqEmail: updateReq.bidReqEmail,
-          bidReqPrice: updateReq.bidReqPrice,
-        },
-      };
-      const result = await jobsCollection.updateOne(filter, updateJob, options);
-      res.send(result);
+      try {
+        const id = req?.params.id;
+        const filter = { _id: new ObjectId(id) };
+        const updateReq = req.body;
+        // const options = { upsert: true };
+        const updateJob = {
+          $set: {
+            bidReqEmail: updateReq.bidReqEmail,
+            bidReqPrice: updateReq.bidReqPrice,
+            bidReq: updateReq.bidReq,
+            status: updateReq.status,
+          },
+        };
+        const result = await jobsCollection.updateOne(filter, updateJob);
+        res.send(result);
+      } catch (error) {
+        console.log(error);
+      }
     });
 
     app.delete("/jobs/:id", async (req, res) => {
@@ -125,53 +128,39 @@ async function run() {
       }
     });
 
-    // postedJobsCollection operations
-    // app.get("/postedJobs", async (req, res) => {
-    //   try {
-    //     const query = { email: req?.query?.email };
-    //     const cursor = postedJobsCollection.find(query);
-    //     const result = await cursor.toArray();
-    //     res.send(result);
-    //   } catch (error) {
-    //     console.log(error);
-    //   }
-    // });
-
-    // app.post("/postedJobs", async (req, res) => {
-    //   try {
-    //     const job = req.body;
-    //     const result = await postedJobsCollection.insertOne(job);
-    //     res.send(result);
-    //   } catch (error) {
-    //     console.log(error);
-    //   }
-    // });
-
-    // app.delete("/postedJobs/:id", async (req, res) => {
-    //   try {
-    //     const id = req?.params;
-    //     const query = { _id: new ObjectId(id)}
-    //     const result = await pr
-    //   } catch (error) {
-    //     console.log(console.error());
-    //   }
-    // });
-
-    // bitsCollectionDB operation
-    app.get("/bits", async (req, res) => {
+    // bidsCollectionDB operation
+    app.get("/bids", async (req, res) => {
       try {
         const query = { email: req?.query?.email };
-        const result = await bitsCollection.find(query).toArray();
+        const result = await bidsCollection.find(query).toArray();
         res.send(result);
       } catch (error) {
         console.log(error);
       }
     });
 
-    app.post("/bits", async (req, res) => {
+    app.post("/bids", async (req, res) => {
       try {
         const bitJob = req.body;
-        const result = await bitsCollection.insertOne(bitJob);
+        const result = await bidsCollection.insertOne(bitJob);
+        res.send(result);
+      } catch (error) {
+        console.log(error);
+      }
+    });
+
+    app.patch("/bids/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const filter = { _id: new ObjectId(id) };
+        const updateReq = req.body;
+        console.log(updateReq);
+        const updateDoc = {
+          $set: {
+            status: updateReq.status,
+          },
+        };
+        const result = await bidsCollection.updateOne(filter, updateDoc);
         res.send(result);
       } catch (error) {
         console.log(error);
