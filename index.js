@@ -1,29 +1,24 @@
 const express = require("express");
 const cors = require("cors");
-var jwt = require("jsonwebtoken");
-var cookieParser = require("cookie-parser");
-const { MongoClient, ServerApiVersion, ObjectId, Long } = require("mongodb");
+const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 const app = express();
 const port = process.env.PORT || 5000;
 
-// middleware
+// Middleware
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "https://job-junction-52e11.web.app",
-      "https://job-junction-52e11.firebaseapp.com",
-    ],
+    origin: "http://localhost:5173", // Add your frontend URL here
     credentials: true,
   })
 );
 app.use(express.json());
 app.use(cookieParser());
 
-const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.m6cowle.mongodb.net/?retryWrites=true&w=majority`;
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.lcvsatz.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -32,7 +27,7 @@ const client = new MongoClient(uri, {
   },
 });
 
-// Middleware
+// JWT Middleware
 const verifyToken = async (req, res, next) => {
   const token = req.cookies?.token;
   if (!token) {
@@ -49,13 +44,12 @@ const verifyToken = async (req, res, next) => {
 
 async function run() {
   try {
-    // Connect the client to the server	(optional starting in v4.7)
-    // await client.connect();
+    await client.connect();
 
     const jobsCollection = client.db("jobJunctionDB").collection("jobs");
-    const bidsCollection = client.db("jobJunctionDB").collection("bids");
+    const bidsCollection = client.db("jobJunctionDB").collection("applyed");
 
-    // jwt api
+    // JWT API
     app.post("/jwt", async (req, res) => {
       const user = req.body;
       const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
@@ -71,43 +65,31 @@ async function run() {
     });
 
     app.post("/logout", async (req, res) => {
-      const user = req.body;
-      res.clearCookie("token", { maxAge: 0 }).send({ success: true });
+      res.clearCookie("token").send({ success: true });
     });
 
-    /// service api
-
-    // jobs collection operations
-
+    // Jobs Collection Operations
     app.get("/jobs", async (req, res) => {
       try {
-        if (!req?.query?.email) {
-          const cursor = jobsCollection.find();
-          const result = await cursor.toArray();
-          return res.send(result);
-        } else {
-          let query = {};
-          if (req.query?.email) {
-            query = { email: req.query.email };
-          }
-          // const query = { email: req?.query?.email };
-          const cursor = jobsCollection.find(query).sort({ title: 1 });
-          const result = await cursor.toArray();
-          res.send(result);
-        }
+        const query = req.query?.email ? { email: req.query.email } : {};
+        const cursor = jobsCollection.find(query).sort({ title: 1 });
+        const result = await cursor.toArray();
+        res.send(result);
       } catch (error) {
-        console.log(error);
+        console.error(error);
+        res.status(500).send({ message: "Internal server error" });
       }
     });
 
     app.get("/jobs/:id", async (req, res) => {
       try {
-        const id = req?.params?.id;
+        const id = req.params.id;
         const query = { _id: new ObjectId(id) };
         const result = await jobsCollection.findOne(query);
         res.send(result);
       } catch (error) {
-        console.log(error);
+        console.error(error);
+        res.status(500).send({ message: "Internal server error" });
       }
     });
 
@@ -117,37 +99,38 @@ async function run() {
         const result = await jobsCollection.insertOne(jobInformation);
         res.send(result);
       } catch (error) {
-        console.log(error);
+        console.error(error);
+        res.status(500).send({ message: "Internal server error" });
       }
     });
 
     app.put("/jobs/:id", async (req, res) => {
-      const id = req?.params?.id;
-      // console.log(id);
-      const filter = { _id: new ObjectId(id) };
-      const updateJobRequest = req?.body;
-      const updateJobInfo = {
-        $set: {
-          title: updateJobRequest.title,
-          deadline: updateJobRequest.deadline,
-          category: updateJobRequest.category,
-          minPrice: updateJobRequest.minPrice,
-          maxPrice: updateJobRequest.maxPrice,
-          desc: updateJobRequest.desc,
-        },
-      };
-      const result = await jobsCollection.updateOne(filter, updateJobInfo);
-      res.send(result);
+      try {
+        const id = req.params.id;
+        const filter = { _id: new ObjectId(id) };
+        const updateJobRequest = req.body;
+        const updateJobInfo = {
+          $set: {
+            title: updateJobRequest.title,
+            deadline: updateJobRequest.deadline,
+            category: updateJobRequest.category,
+            minPrice: updateJobRequest.minPrice,
+            maxPrice: updateJobRequest.maxPrice,
+            desc: updateJobRequest.desc,
+          },
+        };
+        const result = await jobsCollection.updateOne(filter, updateJobInfo);
+        res.send(result);
+      } catch (error) {
+        console.error(error);
+        res.status(500).send({ message: "Internal server error" });
+      }
     });
 
     app.patch("/jobs", async (req, res) => {
       try {
-        const email = req?.query?.email;
-        const title = req?.query?.title;
-        const filter = {
-          bidReqEmail: email,
-          title: title,
-        };
+        const { email, title } = req.query;
+        const filter = { bidReqEmail: email, title: title };
         const updateReq = req.body;
         const updateDoc = {
           $set: {
@@ -157,16 +140,16 @@ async function run() {
         const result = await jobsCollection.updateOne(filter, updateDoc);
         res.send(result);
       } catch (error) {
-        console.log(error);
+        console.error(error);
+        res.status(500).send({ message: "Internal server error" });
       }
     });
 
     app.patch("/jobs/:id", async (req, res) => {
       try {
-        const id = req?.params.id;
+        const id = req.params.id;
         const filter = { _id: new ObjectId(id) };
         const updateReq = req.body;
-        // const options = { upsert: true };
         const updateJob = {
           $set: {
             bidReqEmail: updateReq.bidReqEmail,
@@ -178,60 +161,54 @@ async function run() {
         const result = await jobsCollection.updateOne(filter, updateJob);
         res.send(result);
       } catch (error) {
-        console.log(error);
+        console.error(error);
+        res.status(500).send({ message: "Internal server error" });
       }
     });
 
     app.delete("/jobs/:id", async (req, res) => {
       try {
-        const id = req?.params;
+        const id = req.params.id;
         const query = { _id: new ObjectId(id) };
         const result = await jobsCollection.deleteOne(query);
         res.send(result);
       } catch (error) {
-        console.log(console.error());
+        console.error(error);
+        res.status(500).send({ message: "Internal server error" });
       }
     });
 
-    // bidsCollectionDB operation
-    app.get("/bids", verifyToken, async (req, res) => {
+    // Bids Collection Operations
+    app.get("/applyed", verifyToken, async (req, res) => {
       try {
-        if (req.query?.email !== req.user?.email) {
+        if (req.query.email !== req.user.email) {
           return res.status(403).send({ message: "forbidden access" });
         }
 
-        let query = {};
-        if (req.query?.email) {
-          query = { email: req.query.email };
-        }
-        const result = await bidsCollection
-          .find(query)
-          .sort({ title: 1 })
-          .toArray();
+        const query = req.query?.email ? { email: req.query.email } : {};
+        const result = await bidsCollection.find(query).sort({ title: 1 }).toArray();
         res.send(result);
       } catch (error) {
-        console.log(error);
+        console.error(error);
+        res.status(500).send({ message: "Internal server error" });
       }
     });
 
-    app.post("/bids", async (req, res) => {
+    app.post("/applyed", async (req, res) => {
       try {
         const bitJob = req.body;
         const result = await bidsCollection.insertOne(bitJob);
         res.send(result);
       } catch (error) {
-        console.log(error);
+        console.error(error);
+        res.status(500).send({ message: "Internal server error" });
       }
     });
 
-    app.patch("/bids", async (req, res) => {
+    app.patch("/applyed", async (req, res) => {
       try {
-        const email = req?.query?.email;
-        const title = req?.query?.title;
-        const filter = {
-          email: email,
-          title: title,
-        };
+        const { email, title } = req.query;
+        const filter = { email: email, title: title };
         const updateReq = req.body;
         const updateDoc = {
           $set: {
@@ -241,17 +218,16 @@ async function run() {
         const result = await bidsCollection.updateOne(filter, updateDoc);
         res.send(result);
       } catch (error) {
-        console.log(error);
+        console.error(error);
+        res.status(500).send({ message: "Internal server error" });
       }
     });
 
-    // Send a ping to confirm a successful connection
+    // Ping MongoDB to confirm connection
     await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
+    console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
-    // Ensures that the client will close when you finish/error
+    // Optionally close the client
     // await client.close();
   }
 }
