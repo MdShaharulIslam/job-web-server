@@ -16,7 +16,6 @@ app.use(
 );
 app.use(express.json());
 app.use(cookieParser());
-
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.lcvsatz.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 const client = new MongoClient(uri, {
@@ -227,8 +226,7 @@ async function run() {
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
-    // Optionally close the client
-    // await client.close();
+    
   }
 }
 run().catch(console.dir);
