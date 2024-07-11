@@ -11,7 +11,7 @@ const port = process.env.PORT || 5000;
 // Middleware
 app.use(
   cors({
-    origin: "http://localhost:5173", // Update this with your frontend URL if necessary
+    origin: "https://jobjunction-e3f0d.firebaseapp.com/", // Update this with your frontend URL if necessary
     credentials: true,
   })
 );
