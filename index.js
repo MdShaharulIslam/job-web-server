@@ -10,7 +10,7 @@ const port = process.env.PORT || 5000;
 // Middleware
 app.use(
   cors({
-    origin: "http://localhost:5173", // Add your frontend URL here
+    origin: "https://job-web-client.web.app", // Add your frontend URL here
     credentials: true,
   })
 );
