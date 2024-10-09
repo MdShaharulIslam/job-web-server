@@ -46,7 +46,7 @@ const verifyToken = async (req, res, next) => {
 // MongoDB Operations
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
     console.log("Connected to MongoDB");
 
     const jobsCollection = client.db("jobJunctionDB").collection("jobs");
@@ -232,8 +232,7 @@ async function run() {
   } catch (error) {
     console.error("Error connecting to MongoDB", error);
   } finally {
-    // Optionally, you can close the client connection here
-    // await client.close();
+   
   }
 }
 run().catch(console.dir);
