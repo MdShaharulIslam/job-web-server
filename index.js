@@ -9,13 +9,17 @@ const app = express();
 const port = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors());
+// Updated CORS configuration to allow credentials and specific origins
+const corsOptions = {
+  origin: ['http://localhost:5173', 'https://jobjunction-e3f0d.firebaseapp.com'], // Add your frontend URL
+  credentials: true, // Allow cookies and credentials
+};
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
 
 // MongoDB URI
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.lcvsatz.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
-
 
 const client = new MongoClient(uri, {
   serverApi: {
@@ -43,8 +47,6 @@ const verifyToken = (req, res, next) => {
 
 async function run() {
   try {
-    // MongoDB Connection
-    // await client.connect();
     console.log("Connected to MongoDB");
 
     const jobsCollection = client.db("jobJunctionDB").collection("jobs");
